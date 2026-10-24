@@ -1,0 +1,36 @@
+openapi: 3.1.0
+info:
+  title: asr-service
+  version: 1.0.0
+  description: Распознавание речи (локально или через облако).
+paths:
+  /internal/v1/asr/recognize:
+    post:
+      tags: [internal]
+      summary: Распознать аудио в текст
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [audioUri]
+              properties:
+                audioUri: { type: string, format: uri }
+                language: { type: string, default: "ru-RU" }
+                useCloud: { type: boolean, description: "Если true, использовать облачный API" }
+            example:
+              audioUri: "s3://audio/2026-10-01/user42.wav"
+              useCloud: true
+      responses:
+        '200':
+          description: Текст распознан
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  text: { type: string }
+                  confidence: { type: number }
+        '422':
+          description: Низкая уверенность / не распознано

@@ -1,0 +1,35 @@
+openapi: 3.1.0
+info:
+  title: tts-service
+  version: 1.0.0
+  description: Синтез текста в аудио.
+paths:
+  /internal/v1/tts/synthesize:
+    post:
+      tags: [internal]
+      summary: Превратить текст в аудио
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: { type: string }
+                voice: { type: string, default: "alena" }
+                useCloud: { type: boolean, description: "Если true, использовать облачный API" }
+            example:
+              text: "Браузер открыт"
+              useCloud: true
+      responses:
+        '200':
+          description: Аудио готово
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  audioUri: { type: string, format: uri }
+        '500':
+          description: Ошибка синтеза
