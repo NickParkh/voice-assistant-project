@@ -1,0 +1,33 @@
+openapi: 3.1.0
+info:
+  title: nlu-service
+  version: 1.0.0
+  description: Определение намерения из текста.
+paths:
+  /internal/v1/nlu/parse:
+    post:
+      tags: [internal]
+      summary: Разобрать текст в намерение и слоты
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: { type: string }
+            example:
+              text: "Открой браузер"
+      responses:
+        '200':
+          description: Намерение определено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  intent: { type: string }
+                  slots: { type: object }
+        '400':
+          description: Намерение не распознано

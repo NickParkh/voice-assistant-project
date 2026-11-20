@@ -1,0 +1,57 @@
+openapi: 3.1.0
+info:
+  title: dialog-orchestrator
+  version: 1.0.0
+  description: Главный сервис, управляет диалогом и маршрутизацией между облаком и офлайном.
+paths:
+  /api/v1/assistant/command:
+    post:
+      tags: [public]
+      summary: Выполнить голосовую команду (аудио или текст)
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sessionId]
+              properties:
+                sessionId: { type: string, format: uuid }
+                audioUri: { type: string, format: uri, description: "Ссылка на аудио (если голос)" }
+                text: { type: string, description: "Текст (если ввод с клавиатуры)" }
+                isOnline: { type: boolean, description: "Флаг, указывающий, использовать ли облако" }
+            example:
+              sessionId: "9a4d1e2c-6b7f-4a08-b3c5-0e1f2d3c4b5a"
+              audioUri: "s3://audio/2026-10-01/user42.wav"
+              isOnline: true
+      responses:
+        '200':
+          description: Команда выполнена
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transcript: { type: string }
+                  intent: { type: string }
+                  status: { type: string, enum: [EXECUTED, REJECTED, NOT_UNDERSTOOD] }
+                  responseAudioUri: { type: string, format: uri }
+        '422':
+          description: Речь не распознана
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+components:
+  schemas:
+    Problem:
+      type: object
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
