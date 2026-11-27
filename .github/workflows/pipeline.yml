@@ -1,0 +1,79 @@
+name: CI/CD Pipeline for Microservices
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
+
+jobs:
+  # ==========================================
+  # ЭТАП 1: ТЕСТИРОВАНИЕ (CI)
+  # ==========================================
+  test-orchestrator:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Клонируем репозиторий
+      uses: actions/checkout@v3
+
+    - name: Устанавливаем Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip' # Включаем кэширование зависимостей для ускорения
+
+    - name: Устанавливаем зависимости оркестратора
+      run: |
+        cd services/dialog-orchestrator
+        pip install -r requirements.txt
+        pip install pytest
+
+    - name: Запускаем Unit-тесты
+      run: |
+        cd services/dialog-orchestrator
+        pytest test_main.py -v
+
+  # ==========================================
+  # ЭТАП 2: СБОРКА И ПУБЛИКАЦИЯ (CD)
+  # ==========================================
+  build-and-push:
+    needs: test-orchestrator # Этот этап запустится только если тесты прошли успешно
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # Разрешение на публикацию в GitHub Container Registry
+
+    steps:
+    - name: Клонируем репозиторий
+      uses: actions/checkout@v3
+
+    - name: Логинимся в GitHub Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }} # Секрет, который GitHub создает автоматически
+
+    # Сборка и отправка ASR-сервиса
+    - name: Сборка и публикация asr-service
+      uses: docker/build-push-action@v4
+      with:
+        context: ./services/asr-service
+        push: true
+        tags: ghcr.io/nickparkh/voice-assistant/asr-service:latest
+
+    # Сборка и отправка NLU-сервиса
+    - name: Сборка и публикация nlu-service
+      uses: docker/build-push-action@v4
+      with:
+        context: ./services/nlu-service
+        push: true
+        tags: ghcr.io/nickparkh/voice-assistant/nlu-service:latest
+
+    # Сборка и отправка Оркестратора
+    - name: Сборка и публикация dialog-orchestrator
+      uses: docker/build-push-action@v4
+      with:
+        context: ./services/dialog-orchestrator
+        push: true
+        tags: ghcr.io/nickparkh/voice-assistant/dialog-orchestrator:latest
