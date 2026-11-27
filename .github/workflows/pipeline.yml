@@ -20,7 +20,7 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
-        cache: 'pip' # Включаем кэширование зависимостей для ускорения
+        cache: 'pip'
 
     - name: Устанавливаем зависимости оркестратора
       run: |
@@ -37,11 +37,11 @@ jobs:
   # ЭТАП 2: СБОРКА И ПУБЛИКАЦИЯ (CD)
   # ==========================================
   build-and-push:
-    needs: test-orchestrator # Этот этап запустится только если тесты прошли успешно
+    needs: test-orchestrator
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write # Разрешение на публикацию в GitHub Container Registry
+      packages: write
 
     steps:
     - name: Клонируем репозиторий
@@ -52,9 +52,8 @@ jobs:
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }} # Секрет, который GitHub создает автоматически
+        password: ${{ secrets.GITHUB_TOKEN }}
 
-    # Сборка и отправка ASR-сервиса
     - name: Сборка и публикация asr-service
       uses: docker/build-push-action@v4
       with:
@@ -62,7 +61,6 @@ jobs:
         push: true
         tags: ghcr.io/nickparkh/voice-assistant/asr-service:latest
 
-    # Сборка и отправка NLU-сервиса
     - name: Сборка и публикация nlu-service
       uses: docker/build-push-action@v4
       with:
@@ -70,7 +68,20 @@ jobs:
         push: true
         tags: ghcr.io/nickparkh/voice-assistant/nlu-service:latest
 
-    # Сборка и отправка Оркестратора
+    - name: Сборка и публикация skill-service
+      uses: docker/build-push-action@v4
+      with:
+        context: ./services/skill-service
+        push: true
+        tags: ghcr.io/nickparkh/voice-assistant/skill-service:latest
+
+    - name: Сборка и публикация tts-service
+      uses: docker/build-push-action@v4
+      with:
+        context: ./services/tts-service
+        push: true
+        tags: ghcr.io/nickparkh/voice-assistant/tts-service:latest
+
     - name: Сборка и публикация dialog-orchestrator
       uses: docker/build-push-action@v4
       with:
